@@ -1,0 +1,361 @@
+AI model: ChatGPT 5
+
+## After pushing content for repository structure to GitHub
+
+Me: ran into a problem pushing contents to github, i ran:
+
+git add BBH_events_v3.json GW150914_4_template.hdf5 H-H1_LOSC_4_V2-1126259446-32.hdf5 L-L1_LOSC_4_V2-1126259446-32.hdf5 LOSC_Event_tutorial.ipynb readligo.py
+
+git commit -m"ported files for initial repo structure and added attribution note git tag repo-basic
+
+git push --tags
+
+I see on the github repo that the files i added are not showing up under main but i can find them under the repo-basic tag, what is the problem here?
+
+gpt:You only pushed the tag, not the branch.
+
+git push --tags uploads tag refs (like repo-basic) to GitHub, but it does not push your branch commits.
+
+Your commit lives on your local main, and the tag points to that commit, so you can see the files when you browse the tag on GitHub—but main on GitHub hasn’t been updated yet.
+
+Fix
+
+Push the branch as well:
+
+# (optional) sanity check: make sure you’re on main and ahead of origin
+git status
+git rev-parse --abbrev-ref HEAD     # should print: main
+
+# push your main branch commits
+git push origin main
+
+# if you also want to push (or update) tags in the same go:
+git push origin main --tags
+
+
+After that, refresh the repo on GitHub—your files will appear on the main branch too.
+
+Me: why is origin main needed, ive used just git push after commit and it worked fine in the past, is it something to do w/ the --tag command since we are adding a tag this time?
+
+gpt: Good catch — it’s not that --tags changed how git push works. The difference is between “implicit push” and “explicit push.”
+
+Why git push sometimes works without origin main
+
+If your local branch main is already tracking the remote branch origin/main, then a plain git push knows where to send the commit.
+
+That’s why in your past work, just git push was enough: the tracking relationship was set when you cloned the repo or when you first pushed main.
+
+Why it didn’t update this time
+
+You ran git push --tags. That command only pushes tags; it does not push commits on branches unless you also tell it to (git push origin main --tags).
+
+So your new commit never left your local main; only the tag (repo-basic) was sent to GitHub.
+
+Rule of thumb
+
+git push → pushes your current branch if it’s tracking a remote.
+
+git push --tags → pushes all tags, but not branches.
+
+git push origin main --tags → pushes both your branch (main) and your tags in one shot.
+
+👉 That’s why you needed origin main this time: to explicitly push the branch alongside the tag.
+
+Would you like me to give you a “safe default” push command you can always use for these assignments so you don’t get tripped up again?
+
+Me: so --tag after git push made the terminal think im only wanted to push update to tag? and i would need to specify origin main to let git know to push everything i added and committed as well?
+
+gpt: Exactly ✅ — you’ve got it.
+
+When you do:
+
+git push --tags
+
+
+Git interprets that as: “Push all the tags I’ve created, but don’t touch my branches.”
+→ That’s why your new commit didn’t show up on main, but the repo-basic tag did appear on GitHub.
+
+When you do:
+
+git push origin main
+
+
+Git pushes your current branch (main) commits to the remote.
+
+And when you combine them:
+
+git push origin main --tags
+
+
+you’re saying: “Push my branch updates and any tags I’ve created.”
+
+So yes — --tags on its own only pushes tags. You have to specify origin main if you also want your branch commits sent to GitHub.
+
+## After creating ligotools package and pushing the change to GitHub:
+
+me: i noticed readligo.py still exists in github repo despite me having moved it into ligotools folder/package already (and readligo.py exists in there when i click into the folder), is this normal?
+
+gpt:Ah, yep — this is one of those Git “gotchas.”
+
+When you move a file locally (e.g. mv readligo.py ligotools/), two things happen in Git:
+
+Git sees readligo.py as deleted from the root.
+
+Git sees ligotools/readligo.py as a new file.
+
+But this only becomes “real” in the repo once you stage and commit those changes.
+
+If you only committed the “add” (the new ligotools/readligo.py) but didn’t also commit the “delete” of the old one, GitHub will show both:
+
+the old readligo.py still in the root
+
+the new one inside ligotools/
+
+That’s why it still shows up in your repo.
+
+👉 To fix it, you’d want to:
+
+git rm readligo.py
+git add ligotools/readligo.py
+git commit -m "moved readligo.py into ligotools package"
+git push origin main
+
+
+This way GitHub knows the old file should be removed.
+
+⚠️ So to answer your question directly: No, it’s not normal if you intended a “move.” It’s normal only if the deletion part wasn’t committed.
+
+Do you want me to show you how to check in your repo’s Git history whether the old file got marked as “deleted” yet, or if it’s still just sitting there untracked?
+
+me: check my understanding: so when i moved readligo.py into the ligotools folder, the file was moved into ligotools in my local directory, but when i push the change to github, its more like creating a copy of the ligotools folder/package in the github repo? hence readligo.py stays in main another readligo.py gets created inside ligotools folder, and if i want to remove the readligo.py outside, i would need to explicitly tell git to do it w/ a stand-alone command?
+
+gpt: ✅ You’ve got the right idea — just need to fine-tune the wording a bit:
+
+When you moved the file locally (mv readligo.py ligotools/), your filesystem moved it — the original file in root disappeared and now exists under ligotools/.
+
+What Git sees is not “a move” (at least not automatically). Git only tracks what you stage. To Git, your action looks like:
+
+❌ readligo.py deleted in root
+
+➕ ligotools/readligo.py added
+
+When you committed and pushed, if you only staged the new file, GitHub will happily add ligotools/readligo.py without removing the old root one. That’s why you see both copies in the repo.
+
+Why? Because Git doesn’t assume you want to delete the old one unless you explicitly stage that deletion (git rm readligo.py) or you do git add -A (which stages both additions and deletions).
+
+So:
+
+✔️ Yes, the local move happened.
+
+✔️ GitHub looks like a “copy” happened because the deletion wasn’t committed.
+
+✔️ To actually remove the old readligo.py from GitHub, you need to explicitly tell Git to stage the removal.
+
+👉 Short rule of thumb:
+
+git add filename → tracks additions/modifications
+
+git rm filename → tracks deletions
+
+git add -A → stages everything (adds, deletes, renames)
+
+Do you want me to walk you through checking if the deletion is already staged in your local Git (maybe with git status) before we do the git rm?
+
+## When creating environment
+
+me: random thought, when creating an environment, whats the difference between specifying version numbers of the tools/packages used vs not specifying the version numbers
+
+gpt: Good question 👍 this actually matters a lot in reproducibility (which is why your course cares). Let’s break it down:
+
+1. Specifying versions
+
+Example:
+
+dependencies:
+  - python=3.12
+  - numpy=1.26.4
+  - matplotlib=3.10.3
+
+
+✅ Pros
+
+Reproducibility: everyone who installs your environment gets exactly the same versions. This reduces “it works on my machine but not yours” bugs.
+
+Stability: your code is less likely to suddenly break if a library releases a new version tomorrow.
+
+❌ Cons
+
+Less flexibility: if someone tries to install your environment months later, that exact version might no longer be available on the channel.
+
+Dependency conflicts: very strict versions can clash with each other or with system libraries.
+
+2. Not specifying versions
+
+Example:
+
+dependencies:
+  - python
+  - numpy
+  - matplotlib
+
+
+✅ Pros
+
+Flexibility: you always get the newest compatible version available in the channel.
+
+Easier maintenance: fewer conflicts when mixing packages.
+
+❌ Cons
+
+Non-reproducible: the environment may install different versions today vs. a month from now, leading to different behavior.
+
+Risk of breakage: new releases may deprecate functions, change defaults, or introduce bugs.
+
+3. Common practice
+
+Pin critical dependencies (e.g., python=3.12, numpy=1.26.*) so that your core setup stays stable.
+
+Leave non-critical ones (like visualization or helper libs) flexible if exact versions don’t matter.
+
+For fully reproducible research (like your homework), instructors usually expect pinned versions to make sure grading and Binder builds don’t break.
+
+👉 So the trade-off is:
+
+Strict versioning = maximum reproducibility, less flexible
+
+Loose versioning = more flexible, but risk of “it worked yesterday, not today”
+
+## Asked for some clarification on Binder
+
+me: im a little confused as to what a binder is (binder as in is mybinder.org)
+
+gpt: Totally fair — “Binder” is one of those things that sounds mysterious until you’ve actually used it. Let me break it down in plain terms:
+
+🔹 What is Binder (mybinder.org)?
+
+Binder is a free, cloud service that takes a GitHub repository and turns it into a live, interactive computing environment.
+
+Basically: anyone can click a link → Binder launches a virtual machine in the cloud → it installs the repo’s environment (using your environment.yml or requirements.txt) → and opens JupyterLab / Jupyter Notebook in their browser.
+
+👉 This means people can run your code interactively without installing anything locally.
+
+🔹 Why do we use Binder in class/homework?
+
+Reproducibility: your instructor can run your notebook exactly as you set it up.
+
+Sharing: you don’t need to explain to graders “install these packages”; they just click the Binder badge in your README.
+
+Verification: you can test if your repo actually runs in a clean environment (no hidden local dependencies).
+
+🔹 How does Binder know what to install?
+
+Binder looks for certain config files in your repo:
+
+environment.yml → Conda environment
+
+requirements.txt → pip dependencies
+
+Dockerfile (advanced)
+
+It builds the environment from these, then launches Jupyter.
+
+🔹 What you did earlier (adding badge/link)
+
+That Binder badge you added to your README is just a shortcut URL that tells Binder:
+
+“Go to this repo, this branch/tag, this commit”
+
+“Build an environment from the config file”
+
+“Launch Jupyter for the user”
+
+So when your grader clicks the badge, they’re dropped directly into your notebook, running in a fresh environment built from your repo. 🚀
+
+🌟 Simple analogy
+
+Think of Binder as Google Docs for Jupyter notebooks:
+
+Instead of sending someone a static file, you give them a link.
+
+They click it and can interact with it immediately in their browser.
+
+The environment is created fresh from your repo so it’s reproducible.
+
+Would you like me to show you the exact structure of the Binder URL you added to the README, so you understand what each piece means?
+
+## Encountered the known AttributeError when testing if Binder works:
+
+me: [Screenshot of the error] was testing the notebook in binder, seems like we have an issue, any ideas on the situation?
+
+gpt: What’s happening:
+The notebook was originally written for an older version of SciPy. Back then, functions like tukey and blackman were exposed directly at the top of scipy.signal. In newer SciPy releases, those functions have been reorganized and now live under the submodule scipy.signal.windows.
+
+That’s why you’re seeing:
+
+AttributeError: module 'scipy.signal' has no attribute 'tukey'
+
+
+and the same for blackman.
+
+Where to fix it (your red box lines):
+Right now the code is written as:
+
+try: 
+    dwindow = signal.tukey(template.size, alpha=1./8)
+except: 
+    dwindow = signal.blackman(template.size)
+
+
+In the new SciPy API, you need to point to the windows submodule instead. Update it to:
+
+try:
+    dwindow = signal.windows.tukey(template.size, alpha=1./8)
+except:
+    dwindow = signal.windows.blackman(template.size)
+
+
+Why this works:
+
+from scipy import signal brings in the signal module.
+
+Inside that module, there’s now a windows submodule, which contains tukey and blackman.
+
+By calling signal.windows.tukey (and signal.windows.blackman), you’re just drilling down into the correct location.
+
+No extra import is strictly required (from scipy.signal import windows would also work, but isn’t necessary if you’re happy with signal.windows...).
+
+👉 After making this change, save the notebook and re-run it (Binder or your local ligo env). The AttributeError should be gone, and you’ve satisfied the assignment’s requirement to “dig into the docs and fix the outdated code.”
+
+Want me to also explain why the try/except block is still there, even though both functions now exist under signal.windows?
+
+me: so this is basically a mismatch in versions, the updated package (im assuming its based on the version Binder is pulling from environment.yml) no longer finds the needed thing in the old path, and what we fixed was basically tell the code the correct new pathway?
+
+gpt: Yep — you’ve nailed it.
+
+This whole issue is exactly a version mismatch problem:
+
+The environment you built from environment.yml (and Binder too, since it rebuilds the env from that file) likely pulls in a newer SciPy.
+
+In that newer version, tukey and blackman were moved out of the old location (scipy.signal) into the submodule scipy.signal.windows.
+
+Your notebook code was still written for the older SciPy layout (signal.tukey), so it failed.
+
+What the fix did
+
+By rewriting the calls as:
+
+signal.windows.tukey(...)
+signal.windows.blackman(...)
+
+
+you basically told Python: “Don’t look in the old path anymore, go look in the correct new place where these functions live.”
+
+That’s why the error went away — you aligned the code’s expectations with the version of SciPy installed in your environment.
+
+👉 In short:
+
+Cause: Package update reorganized functions (old code path broke).
+
+Fix: Update the code to point to the new function location.
+
+Do you want me to also show you how to check exactly which SciPy version is installed in your Binder environment, so you can confirm it matches this behavior?
